@@ -10,20 +10,24 @@ class FunctionBase
 	virtual ~FunctionBase() {}
 };
 
+typedef struct {
+	double amplitude = 1, frequency = 1, offset = 1, phaseshift = 0;
+} SineParams;
+
 class Sine : public FunctionBase
 {
   public:
 	// frequency: Hz
 	// phase: rad
-	Sine(double amplitude, double frequency, double offset = 0, double phase = 0)
+	Sine(SineParams params)
 	{
-		_amp = amplitude;
-		_dc = offset;
+		_amp = params.amplitude;
+		_dc = params.offset;
 		// if time is 1.000.000 (1 second) then we should have a full period
-		_freq = frequency * 2.0 * M_PI / 1000000.0;
+		_freq = params.frequency * 2.0 * M_PI / 1000000.0;
 		// time is in microseconds so a phase shift of 2 * PI * 1000000 is a
 		// full period
-		_phase = phase;
+		_phase = params.phaseshift;
 	}
 
 	// x = time in microseconds
@@ -33,17 +37,22 @@ class Sine : public FunctionBase
 	double _amp, _freq, _dc, _phase;
 };
 
+typedef struct {
+	double amplitude = 1, frequency = 1, offset = 1, duty = 50;
+} SquareParams;
+
 class Square : public FunctionBase
 {
   public:
 	// duty: %
-	Square(double amplitude, double frequency, double offset = 0, double duty = 50)
+	// frequency: Hz
+	Square(SquareParams params)
 	{
-		_lhigh = offset + amplitude;
-		_llow = offset - amplitude;
+		_lhigh = params.offset + params.amplitude;
+		_llow = params.offset - params.amplitude;
 
-		_periodTime = 1000000.0 / frequency;
-		_highTime = _periodTime * duty / 100.0;
+		_periodTime = 1000000.0 / params.frequency;
+		_highTime = _periodTime * params.duty / 100.0;
 	}
 
 	// x = time in microseconds
@@ -57,19 +66,24 @@ class Square : public FunctionBase
 	}
 
   private:
-	double _periodTime, _highTime, _phase, _duty, _lhigh, _llow;
+	double _periodTime, _highTime, _lhigh, _llow;
 };
+
+typedef struct {
+	double amplitude = 1, frequency = 1, offset = 1, risetime = 50;
+} TriangularParams;
 
 class Triangular : public FunctionBase
 {
   public:
 	// risetime: %
-	Triangular(double amplitude, double frequency, double offset, double risetime)
+	// frequency: Hz
+	Triangular(TriangularParams params)
 	{
-		_periodTime = 1000000.0 / frequency;
-		_amplitude = amplitude;
-		_llow = offset - amplitude / 2;
-		_riseTime = _periodTime * risetime / 100.0;
+		_periodTime = 1000000.0 / params.frequency;
+		_amplitude = params.amplitude;
+		_llow = params.offset - params.amplitude / 2;
+		_riseTime = _periodTime * params.risetime / 100.0;
 		_fallTime = _periodTime - _riseTime;
 	}
 
@@ -99,9 +113,9 @@ class CombinedFunction
 		return result;
 	}
 
-	template <typename Tp, typename... Args> void add(Args... args)
+	template <typename function, typename param> void addFunction(param params)
 	{
-		std::unique_ptr<FunctionBase> func = std::make_unique<Tp>(args...);
+		std::unique_ptr<FunctionBase> func = std::make_unique<function>(params);
 		functions.push_back(std::move(func));
 	}
 
