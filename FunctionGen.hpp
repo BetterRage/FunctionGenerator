@@ -10,6 +10,8 @@ class FunctionBase
 	virtual ~FunctionBase() {}
 };
 
+// frequency: Hz
+// phase: rad
 typedef struct {
 	double amplitude = 1, frequency = 1, offset = 1, phaseshift = 0;
 } SineParams;
@@ -17,8 +19,7 @@ typedef struct {
 class Sine : public FunctionBase
 {
   public:
-	// frequency: Hz
-	// phase: rad
+	
 	Sine(SineParams params)
 	{
 		_amp = params.amplitude;
@@ -69,6 +70,8 @@ class Square : public FunctionBase
 	double _periodTime, _highTime, _lhigh, _llow;
 };
 
+// risetime: %
+// frequency: Hz
 typedef struct {
 	double amplitude = 1, frequency = 1, offset = 1, risetime = 50;
 } TriangularParams;
@@ -76,13 +79,12 @@ typedef struct {
 class Triangular : public FunctionBase
 {
   public:
-	// risetime: %
-	// frequency: Hz
+	
 	Triangular(TriangularParams params)
 	{
 		_periodTime = 1000000.0 / params.frequency;
 		_amplitude = params.amplitude;
-		_llow = params.offset - params.amplitude / 2;
+		_llow = params.offset - params.amplitude;
 		_riseTime = _periodTime * params.risetime / 100.0;
 		_fallTime = _periodTime - _riseTime;
 	}
@@ -93,7 +95,7 @@ class Triangular : public FunctionBase
 		int period = t / _periodTime;
 		double timeinperiod = t - period * _periodTime;
 		if(timeinperiod <= _riseTime)
-			return _llow + (timeinperiod / _riseTime) * _amplitude;
+			return _llow + (timeinperiod / _riseTime) * 2 * _amplitude;
 		double timeFalling = _fallTime - (timeinperiod - _riseTime);
 		return _llow + timeFalling / _fallTime * _amplitude;
 	}
